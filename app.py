@@ -5,6 +5,8 @@ import tensorflow_hub as hub
 
 # Streamlit
 import streamlit as st
+import preshed
+import cymem
 
 # PDF
 import sys
@@ -14,9 +16,20 @@ from pdfminer.converter import XMLConverter, HTMLConverter, TextConverter
 from pdfminer.layout import LAParams
 import io
 
+# Summarization using extractive bert
+from summarizer import Summarizer
+
+st.set_page_config(layout="wide")
+file, text, q = None, None, None
+
+
 @st.cache()
 def load_bert():
     return hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+
+@st.cache(hash_funcs={preshed.maps.PreshMap:id, cymem.cymem.Pool:id}, allow_output_mutation=True)#hash_funcs={preshed.maps.PreshMap: lambda x: 1, cymem.cymem.Pool:      lambda x: 1})
+def load_summarizer():
+    return Summarizer()
 
 @st.cache()
 def load_pdf(file)->str:
@@ -68,19 +81,27 @@ def get_embedding(s:pd.Series, model)->pd.DataFrame:
 ### APP
 st.title('BERT Passage Scoring')
 
+# ALWAYS
+model = load_bert()
+
+if st.checkbox('Load Summarizer'):
+    summarizer_model = load_summarizer()
+
 file = st.file_uploader('Upload your document.')
 
 if st.checkbox('Use Brexit trade deal'):
     file = 'DRAFT_UK-EU_Comprehensive_Free_Trade_Agreement.pdf'
 
 # RUN
-text = load_pdf(file)
-model = load_bert()
-s = get_articles(text)
-X = get_embedding(s, model)
+if file and not text:
+    text = load_pdf(file)
+
+if text:
+    s = get_articles(text)
+    X = get_embedding(s, model)
 
 @st.cache()
-def ask(q, X=X, s=s, n=5, model=model):
+def ask(q:str, X:pd.DataFrame, s:pd.Series, n: int, model)->pd.Series:
     
     embedding = np.array(model([q])[0])
     sorted_index = (X
@@ -91,10 +112,23 @@ def ask(q, X=X, s=s, n=5, model=model):
     
     return s.loc[sorted_index.index].head(n)
 
-q = st.text_input('What is your query?')
+#@st.cache()
+def summarize(text, model, n=1):
+    result = model(text, num_sentences=n)
+    return result
 
-ans = ask(q, X=X, s=s, n=5, model=model)
 
-for t in ans:
-    st.write(t)
+if text:
+    q = st.text_input('What is your query?')
+    ans = ask(q, X=X, s=s, n=3, model=model)
+
+if q:
+    for i, t in enumerate(ans):
+        with st.beta_expander(f'ARTICLE {t.split()[0]}'):
+            if len(t.split('.'))>3:
+                summary = summarize(t, summarizer_model, 1)
+                st.success(summary)
+
+            st.write(t)
+
 
