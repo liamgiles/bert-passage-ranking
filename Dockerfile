@@ -6,13 +6,7 @@ RUN apt-get update
 RUN apt-get upgrade -y
 RUN apt-get -y install python3-pip
 RUN apt-get install git -y
-RUN pip3 install streamlit
-RUN pip3 install torch
-RUN pip3 install pdfminer
-RUN pip3 install tensorflow-hub
-RUN pip3 install tensorflow
-RUN pip3 install preshed
-RUN pip3 install bert-extractive-summarizer
+RUN pip3 install -r requirements.txt 
 # streamlit-specific commands
 RUN mkdir -p /root/.streamlit
 RUN bash -c 'echo -e "\
