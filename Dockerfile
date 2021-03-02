@@ -1,8 +1,9 @@
 FROM python:3.8.5-buster
+WORKDIR /workdir
+
 COPY requirements.txt /workdir
 
 
-WORKDIR /workdir
 EXPOSE 8501
 RUN apt-get update
 RUN apt-get upgrade -y
