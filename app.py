@@ -27,7 +27,7 @@ file, text, q = None, None, None
 def load_bert():
     return hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 
-@st.cache(hash_funcs={preshed.maps.PreshMap:id, cymem.cymem.Pool:id}, allow_output_mutation=True)#hash_funcs={preshed.maps.PreshMap: lambda x: 1, cymem.cymem.Pool:      lambda x: 1})
+# @st.cache(hash_funcs={preshed.maps.PreshMap:id, cymem.cymem.Pool:id}, allow_output_mutation=True)#hash_funcs={preshed.maps.PreshMap: lambda x: 1, cymem.cymem.Pool:      lambda x: 1})
 def load_summarizer():
     return Summarizer()
 
@@ -125,7 +125,7 @@ if text:
 if q:
     for i, t in enumerate(ans):
         with st.beta_expander(f'ARTICLE {t.split()[0]}'):
-            if len(t.split('.'))>3:
+            if len(t.split('. '))>3:
                 summary = summarize(t, summarizer_model, 1)
                 st.success(summary)
 
